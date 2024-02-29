@@ -48,7 +48,17 @@ const TILT_PARTS_SEPARATION = 0.05 // How far apart the two components of tilts 
 
 const SMOOTHAPEX = false
 
-export async function keyHoles(c: Cuttleform, transforms: Trsf[]) {
+export async function keyHoles(c: Cuttleform, transforms: Trsf[], flip: boolean) {
+  if (flip !== undefined && !flip) {
+    const newKeys = c.keys.map((key) => {
+      if (key.type === 'mx-hotswap') {
+        return { ...key, type: 'mx-hotswap-flipped' }
+      } else {
+        return key
+      }
+    })
+    c.keys = newKeys
+  }
   return combine(await Promise.all(transforms.map((t, i) => keyHole(c.keys[i], t))))
 }
 

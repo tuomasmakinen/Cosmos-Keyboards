@@ -63,6 +63,33 @@ async function generateHotswapKey(name: string, ...options: any[]) {
   await writeFile(`target/key-${name}.step`, file)
 }
 
+async function generateFlippedHotswapKey(name: string, ...options: any[]) {
+  const topFile = await readFile(`src/assets/key-mx-better.step`)
+  const top = await importSTEP(new Blob([topFile])) as Solid
+  const moveFace = new FaceFinder().inPlane('XY', -4.7).find(top)[0]
+  const extrude = basicFaceExtrusion(moveFace, new Vector([0, 0, -1.15]))
+
+  const gen = await import('../../target/gen-keyholes.cjs')
+  const inst = gen.makeHotswapHolder(modeling, ...options)
+  const bottom = modeling.compute(inst).translateZ(-5)
+
+  // Cylinders to provide a smooth transition to the diode hole
+  const c1Top = drawCircle(0.45).translate(6.55, -1.5).sketchOnPlane('XY', -3.5) as Sketch
+  const c1Bottom = drawCircle(0.75).translate(6.85, -1.5).sketchOnPlane('XY', -6.15) as Sketch
+  const c1 = c1Bottom.loftWith(c1Top)
+  const c2Top = drawCircle(0.5).translate(6.5, 6.5).sketchOnPlane('XY', -3.5) as Sketch
+  const c2Bottom = drawCircle(0.75).translate(6.55, 6.75).sketchOnPlane('XY', -6.15) as Sketch
+  const c2 = c2Bottom.loftWith(c2Top)
+
+  const model = top.fuse(extrude).fuse(bottom).cut(c1).cut(c2).mirror('XZ', [0, 0, 0])
+
+  const flipped = model.mirror('YZ', [0, 0, 0])
+
+  const file = modeling.serialize(name, flipped)
+
+  await writeFile(`target/key-${name}.step`, file)
+}
+
 async function main() {
   await setup()
   await modeling.loadManifold()
@@ -79,6 +106,9 @@ async function main() {
     generateHotswapKey('mx-hotswap', 4.1, 4.815, 6.1, 3.815), // For MX?
     generateHotswapKey('mx-hotswap-outemu', 4.6, 4.35, 4.6, 3.0), // For outemu
     generateHotswapKey('mx-hotswap-gateron', 4.5, 4.55, 6.0, 3.8), // For gateron
+    generateFlippedHotswapKey('mx-hotswap-flipped', 4.1, 4.815, 6.1, 3.815), // For MX?
+    generateFlippedHotswapKey('mx-hotswap-outemu-flipped', 4.6, 4.35, 4.6, 3.0), // For outemu
+    generateFlippedHotswapKey('mx-hotswap-gateron-flipped', 4.5, 4.55, 6.0, 3.8), // For gateron
     generateKey('old-box', { switchType: 'box' }),
     generateKey('old-mx', { switchType: 'mx' }),
     generateKey('old-mxSnapIn', { switchType: 'mxSnapIn' }),

@@ -89,7 +89,7 @@ export async function generatePlate(config: Cuttleform, cut = false) {
   }
 }
 
-export async function generate(config: Cuttleform, stitchWalls: boolean) {
+export async function generate(config: Cuttleform, stitchWalls: boolean, flip: boolean) {
   if (isPro(config) && !(await getUser()).sponsor) {
     throw new Error('No pro account')
   }
@@ -122,7 +122,7 @@ export async function generate(config: Cuttleform, stitchWalls: boolean) {
   }
   console.timeEnd('Making web')
   console.time('Creating holes')
-  const holes = await keyHoles(config, transforms.flat())
+  const holes = await keyHoles(config, transforms.flat(), flip)
   console.timeEnd('Creating holes')
   console.time('Creating connector')
   // let connector = null
@@ -221,11 +221,11 @@ export async function cutWall(config: Cuttleform) {
   return result
 }
 
-async function getModel(conf: Cuttleform, name: string, stitchWalls: boolean) {
+async function getModel(conf: Cuttleform, name: string, stitchWalls: boolean, flip: boolean) {
   await ensureOC()
   const geometry = newGeometry(conf)
   if (name == 'model') {
-    let { assembly } = await generate(conf, stitchWalls)
+    let { assembly } = await generate(conf, stitchWalls, flip)
     if (conf.shell.type == 'tilt') {
       // Invert the tilt cases's tilting to the model lies flat
       const geo = newGeometry(conf)
@@ -247,7 +247,7 @@ async function getModel(conf: Cuttleform, name: string, stitchWalls: boolean) {
 }
 
 export async function getSTL(conf: Cuttleform, name: string, flip: boolean) {
-  let model = await getModel(conf, name, true)
+  let model = await getModel(conf, name, true, flip)
   if (flip) model = model.mirror('YZ', [0, 0, 0])
   return blobSTL(model, { tolerance: 1e-2, angularTolerance: 1 })
 }
